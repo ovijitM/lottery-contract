@@ -1,0 +1,39 @@
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+contract lottary {
+    struct user {
+        bytes32 name;
+        address payable add;
+    }
+    address deployer=msg.sender;
+    mapping(address => user) internal User;
+    mapping(address => bool) internal checkuser;
+    address payable[] internal userlist;
+
+    function registration(string memory _name) public {
+        require(msg.sender!=deployer,"you can't reg.");
+        require(!checkuser[msg.sender], "you need to reg. first");
+        checkuser[msg.sender] = true;
+        User[msg.sender] = user(sha256(abi.encodePacked(_name)), payable(msg.sender));
+        userlist.push(payable(msg.sender));
+    }
+
+    function buyticket() payable public {
+        require(msg.sender!=deployer,"you can't reg.");
+        require(checkuser[msg.sender] == true, "you can't buy ticket without reg.");
+        require(msg.value > 0.5 ether, "you need to pay minimum value");
+    }
+
+    function peakwinner() payable public{
+        require(msg.sender==deployer,"only authority can pick winner");
+        address contractAddress = address(this);
+        userlist[uint(keccak256(abi.encodePacked(block.timestamp, block.difficulty))) % userlist.length].transfer(contractAddress.balance);
+        delete User[msg.sender];
+        delete checkuser[msg.sender];
+        userlist = new address payable[](0);
+    }
+}
+
+
